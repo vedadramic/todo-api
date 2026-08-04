@@ -44,7 +44,24 @@ app.get('/tasks/:id', (req, res) => {
 
   res.json(task);
 });
+app.post('/tasks', (req, res) => {
+  const { title } = req.body;
 
+  if (!title || typeof title !== 'string' || title.trim() === '') {
+    return res.status(400).json({ error: 'title is required and must be a non-empty string' });
+  }
+
+  const newTask = {
+    id: nextId,
+    title: title.trim(),
+    done: false,
+  };
+
+  tasks.push(newTask);
+  nextId += 1;
+
+  res.status(201).json(newTask);
+});
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
