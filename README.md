@@ -9,7 +9,7 @@ A REST API for managing to-do tasks. Built with Node.js and Express.
 You need Node.js installed. Then:
 
 ```bash
-git clone https://github.com/vedadramic/todo-api.git
+git clone https://github.com/YOUR_USERNAME/todo-api.git
 cd todo-api
 npm install
 npm start
@@ -34,16 +34,18 @@ Swagger UI at `http://localhost:3000/docs`
 
 ---
 
-## Example commands
+## Example curl commands
 
 ```bash
 curl -i http://localhost:3000/tasks
 
-curl -i http://localhost:3000/tasks/1
+curl -i -X POST http://localhost:3000/tasks \
+  -H "Content-Type: application/json" \
+  -d '{"title":"Buy milk"}'
 
-Invoke-RestMethod -Method POST -Uri http://localhost:3000/tasks -ContentType "application/json" -Body '{"title":"Buy milk"}'
-
-Invoke-RestMethod -Method PUT -Uri http://localhost:3000/tasks/4 -ContentType "application/json" -Body '{"done":true}'
+curl -i -X PUT http://localhost:3000/tasks/4 \
+  -H "Content-Type: application/json" \
+  -d '{"done":true}'
 
 curl -i -X DELETE http://localhost:3000/tasks/4
 ```
