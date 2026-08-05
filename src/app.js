@@ -44,7 +44,6 @@ app.get('/tasks/:id', (req, res) => {
 
   res.json(formatTask(task));
 });
-
 app.post('/tasks', (req, res) => {
   const { title } = req.body;
 
