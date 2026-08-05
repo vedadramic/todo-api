@@ -57,7 +57,6 @@ app.post('/tasks', (req, res) => {
 
   res.status(201).json(formatTask(newTask));
 });
-
 app.put('/tasks/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -100,7 +99,6 @@ app.put('/tasks/:id', (req, res) => {
 
   res.json(formatTask(updated));
 });
-
 app.delete('/tasks/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
 
