@@ -1,8 +1,5 @@
 const express = require('express');
 const db = require('./db'); 
-function formatTask(task) {
-  return { ...task, done: task.done === 1 };
-}
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./openapi');
 
