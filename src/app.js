@@ -1,21 +1,19 @@
 const express = require('express');
+const db = require('./db'); 
+function formatTask(task) {
+  return { ...task, done: task.done === 1 };
+}
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./openapi');
+
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-let tasks = [
-  { id: 1, title: 'Buy groceries', done: false },
-  { id: 2, title: 'Read Express docs', done: true },
-  { id: 3, title: 'Push code to GitHub', done: false },
-];
 
-let nextId = 4;
-
-function findTask(id) {
-  return tasks.find((task) => task.id === id) || null;
+function formatTask(task) {
+  return { ...task, done: task.done === 1 };
 }
 
 app.get('/', (req, res) => {
@@ -27,7 +25,8 @@ app.get('/health', (req, res) => {
 });
 
 app.get('/tasks', (req, res) => {
-  res.json(tasks);
+  const tasks = db.prepare('SELECT * FROM tasks').all();
+  res.json(tasks.map(formatTask));
 });
 
 app.get('/tasks/:id', (req, res) => {
@@ -37,13 +36,13 @@ app.get('/tasks/:id', (req, res) => {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const task = findTask(id);
+  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
   if (!task) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  res.json(task);
+  res.json(formatTask(task));
 });
 app.post('/tasks', (req, res) => {
   const { title } = req.body;
@@ -52,18 +51,12 @@ app.post('/tasks', (req, res) => {
     return res.status(400).json({ error: 'title is required and must be a non-empty string' });
   }
 
-  const newTask = {
-    id: nextId,
-    title: title.trim(),
-    done: false,
-  };
+  const result = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)').run(title.trim(), 0);
 
-  tasks.push(newTask);
-  nextId += 1;
+  const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
 
-  res.status(201).json(newTask);
+  res.status(201).json(formatTask(newTask));
 });
-
 app.put('/tasks/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -71,9 +64,9 @@ app.put('/tasks/:id', (req, res) => {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const task = findTask(id);
+  const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
-  if (!task) {
+  if (!existing) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
@@ -89,19 +82,23 @@ app.put('/tasks/:id', (req, res) => {
     if (typeof title !== 'string' || title.trim() === '') {
       return res.status(400).json({ error: 'title must be a non-empty string' });
     }
-    task.title = title.trim();
   }
 
   if (hasDone) {
     if (typeof done !== 'boolean') {
       return res.status(400).json({ error: 'done must be true or false' });
     }
-    task.done = done;
   }
 
-  res.json(task);
-});
+  const newTitle = hasTitle ? title.trim() : existing.title;
+  const newDone = hasDone ? (done ? 1 : 0) : existing.done;
 
+  db.prepare('UPDATE tasks SET title = ?, done = ? WHERE id = ?').run(newTitle, newDone, id);
+
+  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+
+  res.json(formatTask(updated));
+});
 app.delete('/tasks/:id', (req, res) => {
   const id = parseInt(req.params.id, 10);
 
@@ -109,13 +106,13 @@ app.delete('/tasks/:id', (req, res) => {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const index = tasks.findIndex((task) => task.id === id);
+  const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
 
-  if (index === -1) {
+  if (!existing) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  tasks.splice(index, 1);
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
 
   res.status(204).send();
 });
