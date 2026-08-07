@@ -25,11 +25,7 @@ The database and table are created automatically. Three example tasks are seeded
 
 ## Environment variables
 
-Copy `.env.example` to `.env` before running locally without Docker. Never commit `.env`.
-
-| Variable | Description | Example |
-|----------|-------------|---------|
-| DATABASE_URL | Postgres connection string | postgres://postgres:dev@localhost:5433/tasks |
+Copy `.env.example` to `.env` before running locally without Docker. 
 
 ---
 
