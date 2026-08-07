@@ -3,9 +3,9 @@
   "version": "1.0.0",
   "description": "Task CRUD API built with Node.js and Express",
   "main": "index.js",
-  "scripts": {
-    "start": "node src/app.js"
-  },
+ "scripts": {
+  "start": "node src/app.js"
+},
   "repository": {
     "type": "git",
     "url": "git+https://github.com/vedadramic/todo-api.git"
@@ -18,7 +18,9 @@
   },
   "homepage": "https://github.com/vedadramic/todo-api#readme",
   "dependencies": {
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "pg": "^8.22.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   }

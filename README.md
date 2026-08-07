@@ -1,34 +1,35 @@
 # todo-api
 
-A REST API for managing to-do tasks. Built with Node.js and Express. Data stored in SQLite.
-
----
-
-## Week 3 update — SQLite database
-
-Tasks are now stored in a SQLite database file (`tasks.db`) instead of in memory. The data survives server restarts.
-
-**Why SQLite?** It's a single file, needs zero setup or installation, and is created automatically the first time the server starts. Perfect for a project at this scale.
-
-**The database file** (`tasks.db`) is git-ignored — it's created automatically on first run, so every fresh clone starts with a clean database.
+A REST API for managing to-do tasks. Built with Node.js and Express.
+Data stored in PostgreSQL, running in Docker. Start everything with one command.
 
 ---
 
 ## How to run
 
-You need Node.js installed. Then:
+You need Docker Desktop installed. Then:
 
 ```bash
 git clone https://github.com/vedadramic/todo-api.git
 cd todo-api
-npm install
-npm start
+cp .env.example .env
+docker compose up
 ```
 
 Server runs at `http://localhost:3000`
 Swagger UI at `http://localhost:3000/docs`
 
-The database (`tasks.db`) and table are created automatically. Three example tasks are seeded on the first run only.
+The database and table are created automatically. Three example tasks are seeded on the first run only.
+
+---
+
+## Environment variables
+
+Copy `.env.example` to `.env` before running locally without Docker. Never commit `.env`.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| DATABASE_URL | Postgres connection string | postgres://postgres:dev@localhost:5433/tasks |
 
 ---
 
@@ -46,28 +47,38 @@ The database (`tasks.db`) and table are created automatically. Three example tas
 
 ---
 
-## Example SQL query (from Stage 4)
+## Example curl
 
-```sql
-SELECT * FROM tasks WHERE done = 1;
+```bash
+curl -i http://localhost:3000/tasks
 ```
 
-This returns only completed tasks. After running it in DB Browser, the same result appears through the API immediately — because both read the same `tasks.db` file.
+Response:
+
+HTTP/1.1 200 OK
+[{"id":1,"title":"Buy groceries","done":false},...]
+
 
 ---
 
-## Database (DB Browser)
+## Storage history
 
-![DB Browser showing tasks table](dbrowser.png)
+| Assignment | Storage | Survives restart? |
+|------------|---------|------------------|
+| A1 | JavaScript array | No |
+| A2 | SQLite file (tasks.db) | Yes |
+| A3 | PostgreSQL in Docker | Yes + runs anywhere |
+
+The API endpoints are identical across all three assignments. Storage is just an implementation detail — the same curl commands and status codes work regardless of what's underneath.
+
+---
+
+## Database
+
+![PostgreSQL data via psql](postgres.png)
 
 ---
 
 ## Swagger UI
 
 ![Swagger UI](swagger.png)
-
----
-
-## Note on identical endpoints
-
-The API endpoints are identical to Week 2. The same curl commands and status codes work — only the storage layer changed from a JavaScript array to SQLite. Identical tests passing on a different storage backend is the proof that storage is just an implementation detail.

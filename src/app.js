@@ -1,17 +1,14 @@
+
 const express = require('express');
-const db = require('./db'); 
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./openapi');
+const { pool, init } = require('./db');
 
 const app = express();
 const PORT = 3000;
 
 app.use(express.json());
 app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-function formatTask(task) {
-  return { ...task, done: task.done === 1 };
-}
 
 app.get('/', (req, res) => {
   res.json({ name: 'Task API', version: '1.0', endpoints: ['/tasks'] });
@@ -21,49 +18,52 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.get('/tasks', (req, res) => {
-  const tasks = db.prepare('SELECT * FROM tasks').all();
-  res.json(tasks.map(formatTask));
+app.get('/tasks', async (req, res) => {
+  const result = await pool.query('SELECT * FROM tasks');
+  res.json(result.rows);
 });
 
-app.get('/tasks/:id', (req, res) => {
+app.get('/tasks/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   if (isNaN(id)) {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const task = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  const result = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
 
-  if (!task) {
+  if (result.rows.length === 0) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  res.json(formatTask(task));
+  res.json(result.rows[0]);
 });
-app.post('/tasks', (req, res) => {
+
+app.post('/tasks', async (req, res) => {
   const { title } = req.body;
 
   if (!title || typeof title !== 'string' || title.trim() === '') {
     return res.status(400).json({ error: 'title is required and must be a non-empty string' });
   }
 
-  const result = db.prepare('INSERT INTO tasks (title, done) VALUES (?, ?)').run(title.trim(), 0);
+  const result = await pool.query(
+    'INSERT INTO tasks (title, done) VALUES ($1, $2) RETURNING *',
+    [title.trim(), false]
+  );
 
-  const newTask = db.prepare('SELECT * FROM tasks WHERE id = ?').get(result.lastInsertRowid);
-
-  res.status(201).json(formatTask(newTask));
+  res.status(201).json(result.rows[0]);
 });
-app.put('/tasks/:id', (req, res) => {
+
+app.put('/tasks/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   if (isNaN(id)) {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  const existing = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
 
-  if (!existing) {
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
@@ -87,33 +87,37 @@ app.put('/tasks/:id', (req, res) => {
     }
   }
 
-  const newTitle = hasTitle ? title.trim() : existing.title;
-  const newDone = hasDone ? (done ? 1 : 0) : existing.done;
+  const newTitle = hasTitle ? title.trim() : existing.rows[0].title;
+  const newDone = hasDone ? done : existing.rows[0].done;
 
-  db.prepare('UPDATE tasks SET title = ?, done = ? WHERE id = ?').run(newTitle, newDone, id);
+  const result = await pool.query(
+    'UPDATE tasks SET title = $1, done = $2 WHERE id = $3 RETURNING *',
+    [newTitle, newDone, id]
+  );
 
-  const updated = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
-
-  res.json(formatTask(updated));
+  res.json(result.rows[0]);
 });
-app.delete('/tasks/:id', (req, res) => {
+
+app.delete('/tasks/:id', async (req, res) => {
   const id = parseInt(req.params.id, 10);
 
   if (isNaN(id)) {
     return res.status(400).json({ error: 'id must be a number' });
   }
 
-  const existing = db.prepare('SELECT * FROM tasks WHERE id = ?').get(id);
+  const existing = await pool.query('SELECT * FROM tasks WHERE id = $1', [id]);
 
-  if (!existing) {
+  if (existing.rows.length === 0) {
     return res.status(404).json({ error: `Task ${id} not found` });
   }
 
-  db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+  await pool.query('DELETE FROM tasks WHERE id = $1', [id]);
 
   res.status(204).send();
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+init().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
 });
