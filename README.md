@@ -25,7 +25,11 @@ The database and table are created automatically. Three example tasks are seeded
 
 ## Environment variables
 
-Copy `.env.example` to `.env` before running locally without Docker. 
+Copy `.env.example` to `.env` before running locally without Docker. Never commit `.env`.
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| DATABASE_URL | Postgres connection string | postgres://postgres:YOUR_PASSWORD@localhost:5433/tasks |
 
 ---
 
@@ -48,8 +52,6 @@ Copy `.env.example` to `.env` before running locally without Docker.
 ```bash
 curl -i http://localhost:3000/tasks
 ```
-
-Response:
 
 HTTP/1.1 200 OK
 [{"id":1,"title":"Buy groceries","done":false},...]
